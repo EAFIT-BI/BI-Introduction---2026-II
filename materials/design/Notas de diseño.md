@@ -31,7 +31,7 @@
 | `e_padres_profesionales` | Booleano | |
 | `e_promedio_acumulado` | Decimal | Rango 0 a 5 |
 | `e_promedio_semestre` | Decimal | Rango 0 a 5 |
-| `e_doble_programa` | Varchar | Nombre del programa |
+| `e_doble_programa` | Numérico | FK → tabla `PROGRAMAS`  |
 | `e_empresa_practica` | Varchar | Nombre de la empresa |
 | `e_estado` | Varchar | `matriculado`, `retirado`, `graduado`, `expulsado` |
 
