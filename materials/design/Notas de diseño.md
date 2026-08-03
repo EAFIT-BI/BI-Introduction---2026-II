@@ -33,7 +33,7 @@
 | `e_promedio_semestre` | Decimal | Rango 0 a 5 |
 | `e_doble_programa` | Numérico | FK → tabla `PROGRAMAS`  |
 | `e_empresa_practica` | Varchar | Nombre de la empresa |
-| `e_estado` | Varchar | `matriculado`, `retirado`, `graduado`, `expulsado` |
+| `e_estado` | Varchar | `MATRICULADO`, `RETIRADO`, `GRADUADO`, `EXPULSADO` |
 
 ## ASIGNATURA
 
@@ -43,5 +43,5 @@
 | `a_id_planes_estudio` | Numérico | FK → tabla `PLAN DE ESTUDIO` |
 | `a_nombre_asignaturas` | Varchar | |
 | `a_numero_creditos` | Numérico | |
-| `a_tipologia` | Varchar | `tronco_común`, `disciplinar`, `interdisciplinar`, `flexibles`, `práctica`, `institucional` |
-| `a_estado` | Varchar | `vigente` o `no vigente` |
+| `a_tipologia` | Varchar | `TRONCO COMÚN`, `DISCIPLINAR`, `INTERDISCIPLINAR`, `FLEXIBLE`, `PRÁCTICA`, `INSTITUCIONAL` |
+| `a_estado` | Varchar | `VIGENTE` o `NO VIGENTE` |
