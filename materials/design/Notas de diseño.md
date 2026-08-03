@@ -8,11 +8,11 @@
 * ke_id_profesores, FK proviene de la tabla profesores, numérica
 * ke_nota_asignaturas debe ser un decimal , debe estar en el rango de 0 a 5 con dos cifras decimales
 * ke_estado_asignaturas, varchar
-      APROBADA
-      PENDIENTE
-      CANCELADA
-      REPROBADA
-      EN CURSO
+  ** APROBADA
+  ** PENDIENTE
+  ** CANCELADA
+  ** REPROBADA
+  ** EN CURSO
 
 ## ESTUDIANTE
 e_id_estudiantes, PK, único, numérico
