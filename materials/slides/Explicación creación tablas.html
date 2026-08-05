@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Del concepto a la tabla</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#0c1b24;
+    --paper-raised:#12262f;
+    --grid-line:rgba(148,190,203,.09);
+    --grid-line-strong:rgba(148,190,203,.16);
+    --ink:#e9f2f4;
+    --muted:#83a0aa;
+    --muted-dim:#5a7580;
+    --copper:#cf8355;
+    --copper-soft:rgba(207,131,85,.16);
+    --copper-line:rgba(207,131,85,.55);
+    --teal:#57b8ac;
+    --teal-soft:rgba(87,184,172,.14);
+    --line:rgba(233,242,244,.12);
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --sans:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+      radial-gradient(ellipse at 20% 0%, #10222c 0%, var(--paper) 60%);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1280px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  header{margin-bottom:22px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--copper);
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--copper-line);}
+  h1{
+    font-family:var(--sans);
+    font-weight:700;
+    font-size:clamp(22px,3.4vw,34px);
+    letter-spacing:-.01em;
+    margin:0 0 8px;
+  }
+  h1 em{font-style:normal;color:var(--copper);}
+  .lede{color:var(--muted);font-size:14.5px;max-width:640px;line-height:1.55;margin:0;}
+
+  /* ---------- controls ---------- */
+  .controls{
+    margin-top:20px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    padding:12px 14px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .btn{
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:.03em;
+    color:var(--ink);
+    background:rgba(233,242,244,.05);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 13px;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:background .15s, border-color .15s;
+  }
+  .btn:hover{background:rgba(233,242,244,.1);border-color:rgba(233,242,244,.25);}
+  .btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+  .btn.primary{background:var(--copper-soft);border-color:var(--copper-line);color:#f3d9c6;}
+  .btn.primary:hover{background:rgba(207,131,85,.26);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  select{
+    font-family:var(--mono);font-size:12px;color:var(--ink);
+    background:rgba(233,242,244,.05);border:1px solid var(--line);
+    border-radius:6px;padding:7px 8px;
+  }
+  .spacer{flex:1;}
+  .progress-label{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;}
+
+  .dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .dot{
+    font-family:var(--mono);font-size:10.5px;color:var(--muted-dim);
+    background:rgba(233,242,244,.04);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:5px 8px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .dot:hover{border-color:var(--teal);color:var(--ink);}
+  .dot.done{color:var(--teal);border-color:rgba(87,184,172,.35);background:var(--teal-soft);}
+  .dot.active{color:#0c1b24;background:var(--copper);border-color:var(--copper);font-weight:600;}
+
+  /* ---------- main grid ---------- */
+  .stage{
+    margin-top:22px;
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width:900px){ .stage{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px 22px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .panel-label{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted-dim);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+  }
+  .panel-label .n{color:var(--copper);}
+
+  /* ficha (izquierda): concepto -> logico -> sql -> fisico, apiladas */
+  .ficha-title{
+    font-family:var(--mono);font-weight:600;font-size:22px;letter-spacing:.01em;
+    color:var(--ink);margin:0 0 4px;
+  }
+  .ficha-block{
+    opacity:0;transform:translateY(8px);
+    max-height:0;overflow:hidden;
+    transition:opacity .5s ease, transform .5s ease;
+    margin-top:0;
+  }
+  .ficha-block.show{
+    opacity:1;transform:translateY(0);
+    max-height:2000px;
+    margin-top:16px;
+  }
+
+  .concept-line{
+    font-size:15px;line-height:1.6;color:#d6e6ea;
+    padding-left:14px;border-left:2px solid var(--copper-line);
+  }
+
+  .logical-list{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:12.3px;}
+  .logical-list li{
+    display:grid;grid-template-columns:1fr auto;gap:10px;
+    padding:6px 0;border-bottom:1px dashed var(--line);
+    opacity:0;transform:translateX(-6px);
+    animation:reveal .35s ease forwards;
+  }
+  .logical-list li:last-child{border-bottom:none;}
+  .logical-list .fname{color:var(--ink);}
+  .logical-list .frule{color:var(--muted);text-align:right;}
+
+  @keyframes reveal{to{opacity:1;transform:translateX(0);}}
+
+  pre.code{
+    margin:0;background:#08151c;border:1px solid var(--line);border-radius:8px;
+    padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:1.65;
+    overflow-x:auto;max-height:340px;overflow-y:auto;
+  }
+  pre.code .line{display:block;color:var(--muted-dim);opacity:.35;transition:opacity .25s, color .25s;}
+  pre.code .line.on{opacity:1;color:#c9dde2;}
+  pre.code .line.on .kw{color:var(--copper);}
+  pre.code .line.on .name{color:var(--teal);}
+  .kw{color:inherit;}
+  .name{color:inherit;}
+
+  .phys-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.6px;}
+  .phys-table thead th{
+    text-align:left;font-weight:600;color:var(--muted-dim);
+    text-transform:uppercase;letter-spacing:.08em;font-size:10px;
+    padding:6px 8px;border-bottom:1px solid var(--line-strong,var(--line));
+  }
+  .phys-table tbody tr{
+    opacity:0;transform:translateY(4px);
+    animation:reveal .3s ease forwards;
+  }
+  .phys-table td{padding:6px 8px;border-bottom:1px solid var(--line);color:#d6e6ea;}
+  .badge{
+    display:inline-block;font-size:9.5px;letter-spacing:.05em;font-weight:600;
+    padding:2px 6px;border-radius:4px;margin-right:4px;white-space:nowrap;
+  }
+  .badge.pk{background:var(--copper-soft);color:#f0c19e;border:1px solid var(--copper-line);}
+  .badge.fk{background:var(--teal-soft);color:#a7e6dc;border:1px solid rgba(87,184,172,.45);}
+  .badge.ck{background:rgba(233,242,244,.06);color:var(--muted);border:1px solid var(--line);}
+  .badge.nn{background:rgba(233,242,244,.06);color:var(--muted);border:1px solid var(--line);}
+
+  /* stamp */
+  .stamp{
+    position:absolute;top:16px;right:18px;
+    width:96px;height:96px;border-radius:50%;
+    border:2px dashed var(--copper);
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    color:var(--copper);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;
+    text-transform:uppercase;line-height:1.35;
+    transform:rotate(-14deg) scale(0);
+    opacity:0;
+    pointer-events:none;
+  }
+  .stamp.show{animation:stamp-in .5s cubic-bezier(.2,1.5,.4,1) forwards;}
+  @keyframes stamp-in{
+    0%{transform:rotate(-14deg) scale(2.6);opacity:0;}
+    60%{opacity:1;}
+    100%{transform:rotate(-14deg) scale(1);opacity:1;}
+  }
+
+  /* minimap */
+  .map-wrap{position:sticky;top:20px;}
+  .map-svg{width:100%;height:auto;display:block;}
+  .node-box{
+    fill:var(--paper);stroke:var(--line);stroke-width:1;rx:5;
+    transition:stroke .3s, fill .3s;
+  }
+  .node-box.active{stroke:var(--copper);fill:var(--copper-soft);}
+  .node-box.done{stroke:rgba(87,184,172,.5);}
+  .node-label{font-family:var(--mono);font-size:8.6px;fill:var(--muted);}
+  .node-label.active{fill:#f3d9c6;}
+  .node-label.done{fill:#bfe9e1;}
+  .edge{stroke:var(--muted-dim);stroke-width:1;fill:none;opacity:.55;}
+  .edge.active{stroke:var(--teal);opacity:.9;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-family:var(--mono);font-size:10.5px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .swatch{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  footer{margin-top:30px;color:var(--muted-dim);font-family:var(--mono);font-size:11px;text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Diseño de bases de datos · Contaduría Pública</div>
+    <h1>Del concepto a la tabla: <em>así se construye el esquema</em></h1>
+    <p class="lede">Cada entidad recorre cuatro momentos: la idea de negocio (concepto), el diseño lógico de sus atributos, el código SQL que la ejecuta en Oracle, y la tabla física resultante. Observa cómo, entidad por entidad, se arma el modelo completo.</p>
+  </header>
+
+  <div class="controls">
+    <button class="btn primary" id="btnPlay">▶ Reproducir</button>
+    <button class="btn" id="btnPrev">⟵ Anterior</button>
+    <button class="btn" id="btnNext">Siguiente ⟶</button>
+    <select id="speed">
+      <option value="1900">Velocidad: lenta</option>
+      <option value="1200" selected>Velocidad: normal</option>
+      <option value="650">Velocidad: rápida</option>
+    </select>
+    <div class="spacer"></div>
+    <div class="progress-label" id="progressLabel">Tabla 1 / 14</div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <div class="stage">
+    <!-- FICHA -->
+    <div class="panel" id="fichaPanel">
+      <div class="panel-label"><span class="n">01→04</span> Ficha de la entidad</div>
+      <div class="ficha-title" id="fichaTitle">—</div>
+
+      <div class="ficha-block" id="blockConcept">
+        <div class="panel-label" style="margin-bottom:6px;">Concepto de negocio</div>
+        <p class="concept-line" id="conceptText"></p>
+      </div>
+
+      <div class="ficha-block" id="blockLogical">
+        <div class="panel-label" style="margin-bottom:6px;">Diseño lógico — atributos y reglas</div>
+        <ul class="logical-list" id="logicalList"></ul>
+      </div>
+
+      <div class="ficha-block" id="blockSql">
+        <div class="panel-label" style="margin-bottom:6px;">SQL ejecutándose en Oracle</div>
+        <pre class="code" id="codeBlock"></pre>
+      </div>
+
+      <div class="ficha-block" id="blockPhys">
+        <div class="panel-label" style="margin-bottom:6px;">Tabla física creada</div>
+        <table class="phys-table">
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Restricción</th></tr></thead>
+          <tbody id="physBody"></tbody>
+        </table>
+      </div>
+
+      <div class="stamp" id="stamp">Tabla<br>creada ✓</div>
+    </div>
+
+    <!-- MAPA -->
+    <div class="panel map-wrap">
+      <div class="panel-label"><span class="n">◆</span> Mapa del esquema</div>
+      <svg id="mapSvg" class="map-svg" viewBox="0 0 620 560" preserveAspectRatio="xMidYMin meet"></svg>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--copper)"></i>en construcción</span>
+        <span><i class="swatch" style="background:var(--teal)"></i>tabla creada</span>
+        <span><i class="swatch" style="background:var(--muted-dim)"></i>pendiente</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>Introducción a BI · Universidad EAFIT</footer>
+</div>
+
+<script>
+/* ============================================================
+   DATOS: una entrada por tabla, en el orden real de creación
+   ============================================================ */
+const TABLES = [
+{ key:'profesor', title:'PROFESOR', layer:0,
+  concept:'El docente como recurso académico: su tipo de vinculación, su formación y su estado actual.',
+  columns:[
+    {name:'codigo_profesores', type:'NUMBER', pk:true},
+    {name:'tipo_profesores', type:'VARCHAR2(20)', check:'tiempo_completo · catedratico · medio_tiempo'},
+    {name:'escalafon_profesores', type:'VARCHAR2(50)'},
+    {name:'categoria_profesores', type:'VARCHAR2(50)'},
+    {name:'formacion_basica_profesores', type:'VARCHAR2(100)'},
+    {name:'nivel_maximo_formacion_profesores', type:'VARCHAR2(50)'},
+    {name:'fecha_ingreso_profesores', type:'DATE'},
+    {name:'fecha_salida_profesores', type:'DATE'},
+    {name:'fecha_sabatico_profesores', type:'DATE'},
+    {name:'estado_profesores', type:'VARCHAR2(20)', check:'activo · sabatico · retirado'},
+  ],
+  sql:`CREATE TABLE profesor (
+    codigo_profesores                 NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    tipo_profesores                    VARCHAR2(20),
+    escalafon_profesores               VARCHAR2(50),
+    categoria_profesores               VARCHAR2(50),
+    formacion_basica_profesores        VARCHAR2(100),
+    nivel_maximo_formacion_profesores  VARCHAR2(50),
+    fecha_ingreso_profesores           DATE,
+    fecha_salida_profesores            DATE,
+    fecha_sabatico_profesores          DATE,
+    estado_profesores                  VARCHAR2(20),
+    CONSTRAINT pk_profesor PRIMARY KEY (codigo_profesores),
+    CONSTRAINT ck_tipo_profesores CHECK (tipo_profesores IN ('tiempo_completo','catedratico','medio_tiempo')),
+    CONSTRAINT ck_estado_profesores CHECK (estado_profesores IN ('activo','sabatico','retirado'))
+);`},
+
+{ key:'plan', title:'PLAN', layer:0,
+  concept:'La versión vigente del plan de estudios: sus créditos, resolución y fecha de vigencia.',
+  columns:[
+    {name:'codigo_planes', type:'NUMBER', pk:true},
+    {name:'fecha_actualizacion_planes', type:'DATE'},
+    {name:'fecha_entrada_vigencia_planes', type:'DATE'},
+    {name:'resolucion_planes', type:'VARCHAR2(100)'},
+    {name:'numero_creditos_interdisciplinares_planes', type:'NUMBER'},
+    {name:'numero_creditos_disciplinares_planes', type:'NUMBER'},
+    {name:'numero_creditos_tronco_comun_planes', type:'NUMBER'},
+    {name:'numero_creditos_flexibles_planes', type:'NUMBER'},
+    {name:'numero_creditos_institucionales_planes', type:'NUMBER'},
+    {name:'numero_creditos_practica_planes', type:'NUMBER'},
+    {name:'numero_creditos_totales_planes', type:'NUMBER'},
+    {name:'estado_planes', type:'VARCHAR2(20)', check:'vigente · no_vigente'},
+  ],
+  sql:`CREATE TABLE plan (
+    codigo_planes                              NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    fecha_actualizacion_planes                 DATE,
+    fecha_entrada_vigencia_planes              DATE,
+    resolucion_planes                          VARCHAR2(100),
+    numero_creditos_interdisciplinares_planes  NUMBER,
+    numero_creditos_disciplinares_planes       NUMBER,
+    numero_creditos_tronco_comun_planes        NUMBER,
+    numero_creditos_flexibles_planes           NUMBER,
+    numero_creditos_institucionales_planes     NUMBER,
+    numero_creditos_practica_planes            NUMBER,
+    numero_creditos_totales_planes             NUMBER,
+    estado_planes                              VARCHAR2(20),
+    CONSTRAINT pk_plan PRIMARY KEY (codigo_planes),
+    CONSTRAINT ck_estado_planes CHECK (estado_planes IN ('vigente','no_vigente'))
+);`},
+
+{ key:'asignatura', title:'ASIGNATURA', layer:1,
+  concept:'Un curso ofrecido dentro de un plan de estudios, con su propia tipología.',
+  columns:[
+    {name:'codigo_asignaturas', type:'NUMBER', pk:true},
+    {name:'codigo_plan', type:'NUMBER', fk:'plan', notnull:true},
+    {name:'nombre_asignaturas', type:'VARCHAR2(100)', notnull:true},
+    {name:'numero_creditos_asignaturas', type:'NUMBER'},
+    {name:'tipologia_asignaturas', type:'VARCHAR2(30)', check:'tronco_comun · disciplinar · interdisciplinar · flexibles · practica · institucional'},
+    {name:'estado_asignaturas', type:'VARCHAR2(20)', check:'vigente · no_vigente'},
+  ],
+  sql:`CREATE TABLE asignatura (
+    codigo_asignaturas          NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    codigo_plan                  NUMBER NOT NULL,
+    nombre_asignaturas           VARCHAR2(100) NOT NULL,
+    numero_creditos_asignaturas  NUMBER,
+    tipologia_asignaturas        VARCHAR2(30),
+    estado_asignaturas           VARCHAR2(20),
+    CONSTRAINT pk_asignatura PRIMARY KEY (codigo_asignaturas),
+    CONSTRAINT ck_tipologia_asignaturas CHECK (tipologia_asignaturas IN
+        ('tronco_comun','disciplinar','interdisciplinar','flexibles','practica','institucional')),
+    CONSTRAINT ck_estado_asignaturas CHECK (estado_asignaturas IN ('vigente','no_vigente')),
+    CONSTRAINT fk_asig_plan FOREIGN KEY (codigo_plan) REFERENCES plan(codigo_planes)
+);`},
+
+{ key:'estudiante', title:'ESTUDIANTE', layer:1,
+  concept:'La trayectoria y el perfil socioacadémico de cada estudiante matriculado.',
+  columns:[
+    {name:'codigo_estudiantes', type:'NUMBER', pk:true},
+    {name:'codigo_planes', type:'NUMBER', fk:'plan', notnull:true},
+    {name:'fecha_ingreso_estudiantes', type:'DATE'},
+    {name:'genero_estudiantes', type:'VARCHAR2(20)'},
+    {name:'colegio_estudiantes', type:'VARCHAR2(150)'},
+    {name:'estrato_vivienda_origen_estudiantes', type:'NUMBER(1)', check:'entre 1 y 6'},
+    {name:'ciudad_origen_estudiantes', type:'VARCHAR2(100)'},
+    {name:'estrato_vivienda_residencia_estudiantes', type:'NUMBER(1)', check:'entre 1 y 6'},
+    {name:'ciudad_residencia_estudiantes', type:'VARCHAR2(100)'},
+    {name:'prueba_diagnostica_ingles', type:'NUMBER'},
+    {name:'prueba_diagnostica_matematicas', type:'NUMBER'},
+    {name:'prueba_diagnostica_compresion_lectora', type:'NUMBER'},
+    {name:'prueba_diagnostica_competencia_ciudadana', type:'NUMBER'},
+    {name:'prueba_diagnostica_pensamiento_computacional', type:'NUMBER'},
+    {name:'saber_once_estudiantes', type:'NUMBER'},
+    {name:'saber_pro_estudiantes', type:'NUMBER'},
+    {name:'beca_estudiantes', type:'VARCHAR2(100)'},
+    {name:'padres_profesionales_estudiantes', type:'VARCHAR2(2)', check:'si · no'},
+    {name:'promedio_acumulado_estudiantes', type:'NUMBER(3,2)', check:'entre 0 y 5'},
+    {name:'promedio_semestre_estudiantes', type:'NUMBER(3,2)', check:'entre 0 y 5'},
+    {name:'doble_programa_estudiantes', type:'VARCHAR2(100)'},
+    {name:'empresa_practica_estudiantes', type:'VARCHAR2(100)'},
+    {name:'estado_estudiantes', type:'VARCHAR2(20)', check:'matriculado · retirado · graduado · expulsado'},
+  ],
+  sql:`CREATE TABLE estudiante (
+    codigo_estudiantes                            NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    codigo_planes                                  NUMBER NOT NULL,
+    fecha_ingreso_estudiantes                      DATE,
+    genero_estudiantes                             VARCHAR2(20),
+    colegio_estudiantes                            VARCHAR2(150),
+    estrato_vivienda_origen_estudiantes            NUMBER(1),
+    ciudad_origen_estudiantes                      VARCHAR2(100),
+    estrato_vivienda_residencia_estudiantes        NUMBER(1),
+    ciudad_residencia_estudiantes                  VARCHAR2(100),
+    prueba_diagnostica_ingles                      NUMBER,
+    prueba_diagnostica_matematicas                 NUMBER,
+    prueba_diagnostica_compresion_lectora          NUMBER,
+    prueba_diagnostica_competencia_ciudadana       NUMBER,
+    prueba_diagnostica_pensamiento_computacional   NUMBER,
+    saber_once_estudiantes                         NUMBER,
+    saber_pro_estudiantes                          NUMBER,
+    beca_estudiantes                               VARCHAR2(100),
+    padres_profesionales_estudiantes               VARCHAR2(2),
+    promedio_acumulado_estudiantes                 NUMBER(3,2),
+    promedio_semestre_estudiantes                  NUMBER(3,2),
+    doble_programa_estudiantes                     VARCHAR2(100),
+    empresa_practica_estudiantes                   VARCHAR2(100),
+    estado_estudiantes                             VARCHAR2(20),
+    CONSTRAINT pk_estudiante PRIMARY KEY (codigo_estudiantes),
+    CONSTRAINT ck_estrato_origen CHECK (estrato_vivienda_origen_estudiantes BETWEEN 1 AND 6),
+    CONSTRAINT ck_estrato_residencia CHECK (estrato_vivienda_residencia_estudiantes BETWEEN 1 AND 6),
+    CONSTRAINT ck_padres_profesionales CHECK (padres_profesionales_estudiantes IN ('si','no')),
+    CONSTRAINT ck_promedio_acumulado CHECK (promedio_acumulado_estudiantes BETWEEN 0 AND 5),
+    CONSTRAINT ck_promedio_semestre CHECK (promedio_semestre_estudiantes BETWEEN 0 AND 5),
+    CONSTRAINT ck_estado_estudiantes CHECK (estado_estudiantes IN ('matriculado','retirado','graduado','expulsado')),
+    CONSTRAINT fk_estudiante_plan FOREIGN KEY (codigo_planes) REFERENCES plan(codigo_planes)
+);`},
+
+{ key:'kardex_estudiante', title:'KARDEX_ESTUDIANTE', layer:2,
+  concept:'El registro histórico: qué asignatura cursó cada estudiante, con quién y con qué nota.',
+  columns:[
+    {name:'codigo_kardex', type:'NUMBER', pk:true},
+    {name:'semestre_kardex', type:'NUMBER', notnull:true},
+    {name:'codigo_estudiantes', type:'NUMBER', fk:'estudiante', notnull:true},
+    {name:'codigo_asignaturas', type:'NUMBER', fk:'asignatura', notnull:true},
+    {name:'codigo_profesores', type:'NUMBER', fk:'profesor', notnull:true},
+    {name:'nota_estudiantes', type:'NUMBER(3,2)', check:'entre 0 y 5'},
+    {name:'estado_asignatura_kardex', type:'VARCHAR2(20)', check:'APROBADA · PENDIENTE · CANCELADA · REPROBADA · EN CURSO'},
+  ],
+  sql:`CREATE TABLE kardex_estudiante (
+    codigo_kardex             NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    semestre_kardex            NUMBER NOT NULL,
+    codigo_estudiantes         NUMBER NOT NULL,
+    codigo_asignaturas         NUMBER NOT NULL,
+    codigo_profesores          NUMBER NOT NULL,
+    nota_estudiantes           NUMBER(3,2),
+    estado_asignatura_kardex   VARCHAR2(20),
+    CONSTRAINT pk_kardex PRIMARY KEY (codigo_kardex),
+    CONSTRAINT ck_nota_estudiantes CHECK (nota_estudiantes BETWEEN 0 AND 5),
+    CONSTRAINT ck_estado_asignatura_kardex CHECK (estado_asignatura_kardex IN
+        ('APROBADA','PENDIENTE','CANCELADA','REPROBADA','EN CURSO')),
+    CONSTRAINT fk_kardex_estudiante FOREIGN KEY (codigo_estudiantes) REFERENCES estudiante(codigo_estudiantes),
+    CONSTRAINT fk_kardex_asignatura FOREIGN KEY (codigo_asignaturas) REFERENCES asignatura(codigo_asignaturas),
+    CONSTRAINT fk_kardex_profesor FOREIGN KEY (codigo_profesores) REFERENCES profesor(codigo_profesores)
+);`},
+];
+
+/* ============================================================
+   POSICIONES en el mapa (por capa de dependencia)
+   ============================================================ */
+const layerCount = {};
+TABLES.forEach(t=>{ t._row = (layerCount[t.layer]||0); layerCount[t.layer]=t._row+1; });
+const colW = 148, rowH = 62, offX = 50, offY = 34;
+TABLES.forEach(t=>{ t._x = offX + t.layer*colW; t._y = offY + t._row*rowH; });
+const maxLayer = Math.max(...TABLES.map(t=>t.layer));
+const maxRows  = Math.max(...Object.values(layerCount));
+const svgW = offX*2 + maxLayer*colW + 90;
+const svgH = offY*2 + maxRows*rowH;
+document.getElementById('mapSvg').setAttribute('viewBox', `0 0 ${svgW} ${Math.max(svgH,300)}`);
+
+/* ============================================================
+   RENDER: mapa base (cajas + líneas), se muestran/ocultan con estado
+   ============================================================ */
+const svg = document.getElementById('mapSvg');
+const NS = 'http://www.w3.org/2000/svg';
+
+function keyIndex(key){ return TABLES.findIndex(t=>t.key===key); }
+
+// dibujar edges primero (para que queden detrás de las cajas)
+TABLES.forEach((t, i)=>{
+  t.columns.filter(c=>c.fk).forEach(c=>{
+    const target = TABLES[keyIndex(c.fk)];
+    const path = document.createElementNS(NS,'path');
+    const x1 = t._x, y1 = t._y+11, x2 = target._x+120, y2 = target._y+11;
+    const mx = (x1+x2)/2;
+    path.setAttribute('d', `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`);
+    path.setAttribute('class','edge');
+    path.dataset.from = i;
+    path.dataset.to = keyIndex(c.fk);
+    svg.appendChild(path);
+  });
+});
+
+TABLES.forEach((t,i)=>{
+  const g = document.createElementNS(NS,'g');
+  g.setAttribute('transform', `translate(${t._x},${t._y})`);
+  g.dataset.idx = i;
+  const rect = document.createElementNS(NS,'rect');
+  rect.setAttribute('width','122'); rect.setAttribute('height','22');
+  rect.setAttribute('rx','5'); rect.setAttribute('class','node-box');
+  const label = document.createElementNS(NS,'text');
+  label.setAttribute('x','8'); label.setAttribute('y','14');
+  label.setAttribute('class','node-label');
+  label.textContent = t.title.length>16 ? t.title.slice(0,15)+'…' : t.title;
+  g.appendChild(rect); g.appendChild(label);
+  g.style.cursor='pointer';
+  g.addEventListener('click', ()=>jumpTo(i));
+  svg.appendChild(g);
+});
+
+/* ============================================================
+   DOTS de navegación
+   ============================================================ */
+const dotsWrap = document.getElementById('dots');
+TABLES.forEach((t,i)=>{
+  const d = document.createElement('div');
+  d.className='dot'; d.textContent = (i+1)+' · '+t.title;
+  d.addEventListener('click', ()=>jumpTo(i));
+  dotsWrap.appendChild(d);
+});
+
+/* ============================================================
+   ESTADO Y MOTOR DE ANIMACIÓN
+   Etapas por tabla: 0 vacío, 1 concepto, 2 lógico, 3 sql, 4 física(fin)
+   ============================================================ */
+let current = 0;
+let stage = 0;
+let playing = false;
+let timer = null;
+let speed = 1200;
+
+const el = {
+  title: document.getElementById('fichaTitle'),
+  conceptBlock: document.getElementById('blockConcept'),
+  conceptText: document.getElementById('conceptText'),
+  logicalBlock: document.getElementById('blockLogical'),
+  logicalList: document.getElementById('logicalList'),
+  sqlBlock: document.getElementById('blockSql'),
+  codeBlock: document.getElementById('codeBlock'),
+  physBlock: document.getElementById('blockPhys'),
+  physBody: document.getElementById('physBody'),
+  stamp: document.getElementById('stamp'),
+  progressLabel: document.getElementById('progressLabel'),
+  btnPlay: document.getElementById('btnPlay'),
+  btnPrev: document.getElementById('btnPrev'),
+  btnNext: document.getElementById('btnNext'),
+  speedSel: document.getElementById('speed'),
+};
+
+function ruleFor(c){
+  const parts = [];
+  if(c.pk) parts.push('PK · autogenerada');
+  if(c.fk) parts.push('FK → '+c.fk);
+  if(c.check) parts.push('regla: '+c.check);
+  if(c.notnull && !c.pk) parts.push('obligatorio');
+  if(parts.length===0) parts.push('dato descriptivo');
+  return parts.join(' · ');
+}
+
+function renderConcept(t){
+  el.title.textContent = t.title;
+  el.conceptText.textContent = t.concept;
+}
+
+function renderLogical(t){
+  el.logicalList.innerHTML='';
+  t.columns.forEach((c,idx)=>{
+    const li = document.createElement('li');
+    li.style.animationDelay = (idx*0.045)+'s';
+    const fname = document.createElement('span');
+    fname.className='fname'; fname.textContent = c.name;
+    const frule = document.createElement('span');
+    frule.className='frule'; frule.textContent = ruleFor(c);
+    li.appendChild(fname); li.appendChild(frule);
+    el.logicalList.appendChild(li);
+  });
+}
+
+function renderSql(t){
+  const lines = t.sql.split('\n');
+  el.codeBlock.innerHTML = lines.map(l=>{
+    const escaped = l.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    return `<span class="line">${escaped || '&nbsp;'}</span>`;
+  }).join('\n');
+  // barrido de "ejecución": revela línea a línea
+  const spans = el.codeBlock.querySelectorAll('.line');
+  spans.forEach((s,idx)=>{
+    setTimeout(()=>s.classList.add('on'), idx*35);
+  });
+}
+
+function renderPhys(t){
+  el.physBody.innerHTML='';
+  t.columns.forEach((c,idx)=>{
+    const tr = document.createElement('tr');
+    tr.style.animationDelay = (idx*0.05)+'s';
+    const badges = [];
+    if(c.pk) badges.push('<span class="badge pk">PK</span>');
+    if(c.fk) badges.push('<span class="badge fk">FK → '+c.fk+'</span>');
+    if(c.check) badges.push('<span class="badge ck">CHECK</span>');
+    if(c.notnull && !c.pk) badges.push('<span class="badge nn">NOT NULL</span>');
+    tr.innerHTML = `<td>${c.name}</td><td>${c.type}</td><td>${badges.join(' ')||'—'}</td>`;
+    el.physBody.appendChild(tr);
+  });
+}
+
+function setMapState(){
+  document.querySelectorAll('#mapSvg g').forEach(g=>{
+    const idx = +g.dataset.idx;
+    const rect = g.querySelector('rect');
+    const label = g.querySelector('text');
+    rect.classList.remove('active','done');
+    label.classList.remove('active','done');
+    g.style.opacity = idx > current ? '0.25' : '1';
+    if(idx < current || (idx===current && stage>=4)){
+      rect.classList.add('done'); label.classList.add('done');
+    } else if(idx===current){
+      rect.classList.add('active'); label.classList.add('active');
+    }
+  });
+  document.querySelectorAll('#mapSvg path.edge').forEach(p=>{
+    const from = +p.dataset.from, to = +p.dataset.to;
+    const bothReady = (from < current || (from===current && stage>=4)) && (to < current || (to===current && stage>=4));
+    p.classList.toggle('active', bothReady);
+    p.style.opacity = bothReady ? '' : (from<=current ? '.25' : '0');
+  });
+}
+
+function setDotsState(){
+  document.querySelectorAll('.dot').forEach((d,idx)=>{
+    d.classList.toggle('active', idx===current);
+    d.classList.toggle('done', idx<current || (idx===current && stage>=4));
+  });
+}
+
+function renderStageBlocks(t){
+  el.conceptBlock.classList.toggle('show', stage>=1);
+  el.logicalBlock.classList.toggle('show', stage>=2);
+  el.sqlBlock.classList.toggle('show', stage>=3);
+  el.physBlock.classList.toggle('show', stage>=4);
+  el.stamp.classList.toggle('show', stage>=4);
+}
+
+function renderAll(){
+  const t = TABLES[current];
+  el.progressLabel.textContent = `Tabla ${current+1} / ${TABLES.length} — ${t.title}`;
+  renderConcept(t);
+  if(stage>=2) renderLogical(t); else el.logicalList.innerHTML='';
+  if(stage>=3) renderSql(t); else el.codeBlock.innerHTML='';
+  if(stage>=4) renderPhys(t); else el.physBody.innerHTML='';
+  renderStageBlocks(t);
+  setMapState();
+  setDotsState();
+  el.btnPrev.disabled = (current===0 && stage<=1);
+  el.btnNext.disabled = (current===TABLES.length-1 && stage>=4);
+}
+
+function tick(){
+  if(stage < 4){
+    stage++;
+  } else if(current < TABLES.length-1){
+    current++;
+    stage = 1;
+  } else {
+    pause();
+    return;
+  }
+  renderAll();
+}
+
+function play(){
+  playing = true;
+  el.btnPlay.textContent = '⏸ Pausar';
+  clearInterval(timer);
+  timer = setInterval(tick, speed);
+}
+function pause(){
+  playing = false;
+  el.btnPlay.textContent = '▶ Reproducir';
+  clearInterval(timer);
+}
+
+function jumpTo(idx){
+  pause();
+  current = idx;
+  stage = 4;
+  renderAll();
+}
+
+el.btnPlay.addEventListener('click', ()=>{
+  if(stage===0) stage=1;
+  playing ? pause() : play();
+});
+el.btnNext.addEventListener('click', ()=>{
+  pause();
+  if(stage<4){ stage=4; }
+  else if(current<TABLES.length-1){ current++; stage=1; }
+  renderAll();
+});
+el.btnPrev.addEventListener('click', ()=>{
+  pause();
+  if(stage>1){ stage=1; }
+  else if(current>0){ current--; stage=4; }
+  renderAll();
+});
+el.speedSel.addEventListener('change', (e)=>{
+  speed = +e.target.value;
+  if(playing){ play(); }
+});
+
+// estado inicial
+stage = 1;
+renderAll();
+</script>
+</body>
+</html>
